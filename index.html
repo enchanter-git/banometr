@@ -59,6 +59,9 @@
   summary{cursor:pointer;color:var(--txt);font-weight:600}
   .rules{display:grid;grid-template-columns:1fr auto;gap:6px 16px;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:13px}
   .rules input{width:80px;padding:6px 8px;font-size:13px}
+  .reset{margin-top:14px;background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:8px;
+    padding:8px 12px;font:600 13px Inter,sans-serif;cursor:pointer}
+  .reset:hover{border-color:var(--red);color:var(--red)}
   footer{text-align:center;color:var(--mut);font-size:12px;margin-top:24px}
 </style>
 </head>
@@ -120,6 +123,7 @@
           <span>Цифры в нике — множитель</span><input type="number" step="0.05" id="r_digits" value="1.25">
           <span>Аниме на аве — множитель</span><input type="number" step="0.05" id="r_anime" value="1.5">
         </div>
+        <button id="reset" class="reset">Сбросить к стандартным</button>
       </details>
     </div>
   </div>
@@ -200,7 +204,30 @@ function calc(){
     $('warn').textContent = '';
   }
   $('stamp').textContent = days >= 20 ? 'ПОМЕР' : days <= 7 ? 'ПОЩАДА' : 'BANNED';
+  save();
 }
+
+// --- сохранение настроек в браузере ---
+var STORE = 'banometr.v1';
+const FIELDS = ['nick','year','r_base','r_oldYear','r_old','r_digits','r_anime'];
+const DEFAULTS = { r_base:'14', r_oldYear:'2020', r_old:'0.5', r_digits:'1.25', r_anime:'1.5' };
+function save(){
+  const data = { digits: state.digits, anime: state.anime };
+  FIELDS.forEach(id => data[id] = $(id).value);
+  try { localStorage.setItem(STORE, JSON.stringify(data)); } catch {}
+}
+function load(){
+  let data; try { data = JSON.parse(localStorage.getItem(STORE)); } catch {}
+  if (!data) return;
+  FIELDS.forEach(id => { if (data[id] != null) $(id).value = data[id]; });
+  state.digits = +data.digits || 0; state.anime = +data.anime || 0;
+  setToggle('digits'); setToggle('anime');
+  if ($('nick').value) $('nickHint').textContent = state.digits ? 'Цифры найдены — подозрительно' : 'Цифр нет';
+}
+$('reset').addEventListener('click', () => {
+  Object.entries(DEFAULTS).forEach(([id, v]) => $(id).value = v);
+  calc();
+});
 
 $('copy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText($('cmd').textContent); $('copy').textContent = 'Готово ✓'; }
@@ -208,6 +235,7 @@ $('copy').addEventListener('click', async () => {
   setTimeout(() => $('copy').textContent = 'Копировать', 1500);
 });
 
+load();
 calc();
 </script>
 </body>
